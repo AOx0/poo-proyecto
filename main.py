@@ -221,8 +221,8 @@ def main():
 
             aleatorio = input("Desea generar los datos de forma aleatoria [si|no]: ") == "si"
 
-            posiciones_carreras = generar_posiciones(len(cargar_piloto(df["Piloto"][0])), len(df))
-            velocidades_carreras = generar_velocidades(len(cargar_piloto(df["Piloto"][0])), len(df))
+            posiciones_carreras = generar_posiciones(len(cargar_piloto(df.loc[1]["Piloto"])), len(df))
+            velocidades_carreras = generar_velocidades(len(cargar_piloto(df.loc[1]["Piloto"])), len(df))
 
             # Se modifican todos los pilotos
             i = 0
