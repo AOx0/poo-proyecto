@@ -48,6 +48,10 @@ def cargar_piloto(nombre_piloto):
     return pd.read_csv(nombre_piloto + ".csv", index_col=0)
 
 
+def guardar_piloto(df_pilot_a_guardar: pd.DataFrame, nombre):
+    df_pilot_a_guardar.to_csv(nombre + ".csv")
+
+
 def pedir_piloto(msg, df_):
     while True:
         nombre_piloto = input(msg)
@@ -57,11 +61,13 @@ def pedir_piloto(msg, df_):
 
         if nombre_piloto.isdecimal():
             print("Detectado índice de piloto")
-            if df_.loc[int(nombre_piloto)].empty:
-                print("Error: Ingrese un índice válido")
-            else:
+            try:
+                _ = df_.loc[int(nombre_piloto)].empty
                 nombre_piloto = df_.loc[int(nombre_piloto)]["Piloto"]
                 break
+            except:
+                print("Error: Ingrese un índice válido")
+                continue
 
         if df_.loc[df_['Piloto'] == nombre_piloto].empty:
             print("Error: Ingrese un piloto válido")
@@ -105,13 +111,6 @@ def main():
 
         carrera = try_int("Ingrese el número de carreras que va a registrar por piloto: ")
 
-        with open("num_carreras.txt", "w") as f:
-            f.truncate(0)
-
-            f.write(str(carrera))
-
-            f.close()
-
         num_pilotos = input("Ingrese el número de pilotos que desea generar aleatoriamente [default: rand]: ")
 
         if num_pilotos.isalnum():
@@ -124,6 +123,8 @@ def main():
         for i in range(num_pilotos):
 
             nombre = names.get_full_name()
+            print("Registrando datos para " + nombre)
+
             df_piloto = crear_registro(nombre)
 
             promedio_velocidad_carrera = 0
@@ -152,10 +153,6 @@ def main():
             df_piloto.to_csv(nombre + ".csv")
             df.to_csv("datos.csv")
 
-    with open("num_carreras.txt", "r") as f:
-        string = f.read()
-        carrera = int(string)
-
     option = 0
     while option != 4:
         print(
@@ -174,49 +171,125 @@ def main():
             print("Selección de pilotos:\n"
                   "Ingrese el nombre de los pilotos que desee o 'terminar' para continuar")
 
-            df_pilotos = []
+            df_pilotos = {}
             while True:
                 piloto = pedir_piloto("Ingrese el nombre o id del piloto: ", df)
 
                 if piloto == "terminar":
                     break
 
-                df_pilotos += [(piloto, cargar_piloto(piloto))]
+                df_pilotos[piloto] = cargar_piloto(piloto)
 
             if not df_pilotos:
                 continue
 
             for piloto in df_pilotos:
-                print(piloto[0])
-                print(piloto[1])
+                print(piloto)
+                print(df_pilotos[piloto])
 
-            if input("Deseas graficar una estadística en específico: [si|no]").lower() == "si":
+            if input("Deseas graficar una estadística en específico: [si|no]: ").lower() == "si":
                 print("Selección de stats:\n"
                       "Ingrese el nombre de las estadísticas que desee graficar o 'terminar' para continuar")
 
-                df_stats = []
+                df_stats = {}
                 while True:
-                    stat = pedir_stat("Ingrese una estadística a graficar: ", df_pilotos[0][1])
+                    stat = pedir_stat("Ingrese una estadística a graficar: ", df_pilotos[list(df_pilotos.keys())[0]])
 
                     if stat == "terminar":
                         break
 
-                    df_stats += [stat]
+                    df_stats[stat] = True
 
-                carreras = list(range(1, carrera + 1))
+                carreras = list(range(1, len(df_pilotos[list(df_pilotos.keys())[0]])+1))
 
                 if not df_stats:
                     continue
 
-                for stat in df_stats:
+                for stat in df_stats.keys():
                     fig, ax = plt.subplots()
                     for piloto in df_pilotos:
-                        ax.plot(carreras, piloto[1][stat].to_list(), label=piloto[0])
+                        ax.plot(carreras, df_pilotos[piloto][stat].to_list(), label=piloto)
 
                     ax.set_title(stat, loc='center',
                                  fontdict={'fontsize': 14, 'fontweight': 'bold', 'color': 'tab:blue'})
                     plt.legend()
                     plt.show()
+
+        if option == 2:
+            pilotos_cambiados = []
+            posiciones_disponibles = [num + 1 for num in range(len(df))]
+
+            aleatorio = input("Desea generar los datos de forma aleatoria [si|no]: ") == "si"
+
+            posiciones_carreras = generar_posiciones(len(cargar_piloto(df["Piloto"][0])), len(df))
+            velocidades_carreras = generar_velocidades(len(cargar_piloto(df["Piloto"][0])), len(df))
+
+            # Se modifican todos los pilotos
+            i = 0
+            for piloto in df["Piloto"]:
+
+                # Cargamos los datos del archivo de datos del piloto
+                df_piloto = cargar_piloto(piloto)
+
+                # Informamos al usuario qué corredor se está modificando
+                print("Registrando datos para " + piloto)
+
+                if not aleatorio:
+                    # Nos aseguramos que la velocidad máxima sea válida
+                    while True:
+                        vel_max = try_int("Ingresa la velocidad máxima: ")
+                        if not vel_max > 160:
+                            print("La velocidad máxima debe ser mayor a 160")
+                        else:
+                            break
+
+                    # Nos aseguramos que la velocidad media sea válida
+                    while True:
+                        vel_media = try_int("Ingresa la velocidad media: ")
+                        if vel_media > vel_max:
+                            print(
+                                "La velocidad máxima (" + str(vel_max) + ") "
+                                                                         "debe ser mayor a la velocidad media (" + str(
+                                    vel_media) + ")"
+                            )
+                        else:
+                            break
+
+                    # Nos aseguramos que la posición sea válida y única
+                    while True:
+                        posicion = try_int("Ingresa la posición: ")
+                        if posicion not in posiciones_disponibles:
+                            print("La posicion ya fue registrada para otro corredor.")
+                            print("Posiciones disponibles: " + str(posiciones_disponibles))
+                        else:
+                            break
+
+                    df_piloto = pd.concat([df_piloto, pd.DataFrame({
+                        "Velocidad Media": vel_media,
+                        "Posición": posicion,
+                        "Velocidad Max": vel_max
+                    }, index=[len(df_piloto) + 1])])
+
+                    # Reducimos el número de posiciones disponibles para los demás corredores
+                    posiciones_disponibles.remove(posicion)
+                else:
+                    df_piloto = pd.concat([df_piloto, pd.DataFrame({
+                        "Velocidad Media": [velocidades_carreras[0][posiciones_carreras[0][i] - 1]],
+                        "Posición": [posiciones_carreras[0][i]],
+                        "Velocidad Max": [
+                            velocidades_carreras[0][posiciones_carreras[0][i] - 1] + random.randrange(10, 25)]
+                    }, index=[len(df_piloto) + 1])])
+
+                i += 1
+
+                # Almacenamos el piloto modificado y su nuevo estado en un arreglo de pilotos listos
+                pilotos_cambiados.append((df_piloto, piloto))
+
+            # Nos aseguramos de que se terminen de registrar todos los nuevos datos.
+            # Por lo tanto, almacenamos hasta el final
+            for df_piloto, piloto in pilotos_cambiados:
+                guardar_piloto(df_piloto, piloto)
+
         if option == 3:
             import os
             test = os.listdir(".")
