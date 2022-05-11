@@ -12,10 +12,11 @@ random.seed(250)
 
 # Función para pedir un valor de manera indefinida hasta que se logre convertir a número
 def try_int(msg):
-    try:
-        return int(input(msg))
-    except ValueError:
-        print("Error: Ingrese una valor válido!")
+    while True:
+        try:
+            return int(input(msg))
+        except ValueError:
+            print("Error: Ingrese una valor válido!")
 
 
 # Crea un archivo base para almacenar los registros del historial de un corredor
@@ -104,7 +105,7 @@ def pedir_stat(msg, df_):
 
 # Función principal del programa. Muestra un menú que permite almacenar datos de nuevas carreras, borrar todos los
 # registros o consultar selecciones de corredores basado en búsqueda por nombre e ID. Permite graficar las estadísticas
-# para relizar comparaciones gráficas
+# para realizar comparaciones gráficas
 def main():
     # Selección del archivo principal, que lleva el registro de todos los pilotos registrados.
     file = input("Ingrese el nombre del archivo principal [default: datos.csv]: ")
@@ -235,7 +236,7 @@ def main():
 
                     df_stats[stat] = True
 
-                # Se genera una lista con el nombre de carreras para utiliazar en el eje de las y de laa gráfica
+                # Se genera una lista con el nombre de carreras para utilizar en el eje de las y de laa gráfica
                 carreras = list(range(1, len(df_pilotos[list(df_pilotos.keys())[0]])+1))
 
                 # Si no se seleccionaron estaadísticas no vale la pena ejecutar el resto del bloque. Regresa al menú
